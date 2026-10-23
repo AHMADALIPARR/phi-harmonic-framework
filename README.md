@@ -46,10 +46,10 @@ This repository is built around **BQN** — the array language that carries the 
 
 | Module | Role | Guide |
 |--------|------|-------|
-| **[`bqn/array-core.bqn`](bqn/array-core.bqn)** | Shared foundation: rank, φ-geometry, spectral banks, least-squares | [Read the core →](bqn/array-core.bqn) |
-| **[`bqn/fibonacci-parameters.bqn`](bqn/fibonacci-parameters.bqn)** | Carrier demodulation & Fibonacci amplitude/phase least-squares fit | [Read the fit pipeline →](bqn/fibonacci-parameters.bqn) |
-| **[`bqn/inverse-solver.bqn`](bqn/inverse-solver.bqn)** | Field inverse: spectrum isolation, residual maps, spatial coherence | [Read the inverse solver →](bqn/inverse-solver.bqn) |
-| **[`bqn/cellular-automata.bqn`](bqn/cellular-automata.bqn)** | Recursive invariant extraction from CA trajectories + atomic-key masking | [Read the CA engine →](bqn/cellular-automata.bqn) |
+| **[`bqn/array-core.bqn`](bqn/array-core.bqn)** | ★ Shared array foundation — rank ops, φ-geometry, spectral banks, LS algebra | [Array core →](bqn/array-core.bqn) |
+| **[`bqn/fibonacci-parameters.bqn`](bqn/fibonacci-parameters.bqn)** | Carrier demodulation & Fibonacci amplitude/phase least-squares fit | [Fit pipeline →](bqn/fibonacci-parameters.bqn) |
+| **[`bqn/inverse-solver.bqn`](bqn/inverse-solver.bqn)** | Field inverse: spectrum isolation, residual maps, spatial coherence | [Inverse solver →](bqn/inverse-solver.bqn) |
+| **[`bqn/cellular-automata.bqn`](bqn/cellular-automata.bqn)** | Recursive invariant extraction from CA trajectories + atomic-key masking | [CA engine →](bqn/cellular-automata.bqn) |
 
 ```bqn
 PHI ← 1.618033988749895
@@ -79,7 +79,7 @@ The mathematical framework treats space and spectrum through φ-scaled geometry:
 | **Atomic keys** | {1, 6, 7, 8} | H, C, N, O |
 
 <div align="center">
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Golden_ratio_line2.svg/800px-Golden_ratio_line2.svg.png" alt="Golden ratio line segments a : b = (a+b) : a" width="560"/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Golden_ratio_line2.svg/1280px-Golden_ratio_line2.svg.png" alt="Golden ratio line segments a : b = (a+b) : a" width="560"/>
 <p><em>φ definition: a/b = (a+b)/a</em></p>
 </div>
 
