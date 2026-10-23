@@ -1,0 +1,34 @@
+% Copyright (C) 2026 AHMAD ALI PARR
+% Licensed under GNU AGPL v3.0 — see LICENSE
+%
+% 02-sidebands.dl — Sideband triplet detection
+% Depends on: 00-facts.dl, 01-carrier.dl
+
+sideband_upper(Fc, Fj, Fobs, Amp) :-
+    candidate_carrier(Fc),
+    fib(Fj),
+    Fobs is Fc + Fj,
+    peak_any(Fobs, Amp),
+    thr_sideband(T),
+    Amp > T.
+
+sideband_lower(Fc, Fj, Fobs, Amp) :-
+    candidate_carrier(Fc),
+    fib(Fj),
+    Fobs is Fc - Fj,
+    peak_any(Fobs, Amp),
+    thr_sideband(T),
+    Amp > T.
+
+sideband_any(Fc, Fj, Fobs, Amp) :- sideband_upper(Fc, Fj, Fobs, Amp).
+sideband_any(Fc, Fj, Fobs, Amp) :- sideband_lower(Fc, Fj, Fobs, Amp).
+
+sideband_triplet(Fc, Fj, ObservedFreq) :-
+    candidate_carrier(Fc),
+    fib_freq(Fj),
+    (ObservedFreq is Fc + Fj ; ObservedFreq is Fc - Fj),
+    observed_peak(ObservedFreq, SideAmp),
+    SideAmp > 0.2.
+
+sideband_offset(Fc, Fj) :-
+    sideband_any(Fc, Fj, _, _).

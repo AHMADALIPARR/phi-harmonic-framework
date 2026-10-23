@@ -1,0 +1,38 @@
+% Copyright (C) 2026 AHMAD ALI PARR
+% Licensed under GNU AGPL v3.0 — see LICENSE
+%
+% 01-carrier.dl — Carrier candidate detection
+% Depends on: 00-facts.dl
+
+peak_any(F, A) :- peak(F, A).
+peak_any(F, A) :- peak_ch(_, F, A).
+
+candidate_carrier(Fc) :-
+    observed_peak(Fc, Amp),
+    thr_strong(T),
+    Amp > T,
+    carrier_lo_strict(Lo),
+    carrier_hi_strict(Hi),
+    Fc >= Lo,
+    Fc <= Hi.
+
+candidate_carrier_soft(Fc, Amp) :-
+    peak_any(Fc, Amp),
+    thr_weak(T),
+    Amp > T,
+    carrier_lo(Lo),
+    carrier_hi(Hi),
+    Fc >= Lo,
+    Fc <= Hi.
+
+candidate_carrier_ch(Ch, Fc, Amp) :-
+    peak_ch(Ch, Fc, Amp),
+    thr_strong(T),
+    Amp > T,
+    carrier_lo(Lo),
+    carrier_hi(Hi),
+    Fc >= Lo,
+    Fc <= Hi.
+
+carrier_ch(Ch, Fc, Amp) :-
+    candidate_carrier_ch(Ch, Fc, Amp).

@@ -1,0 +1,68 @@
+% Copyright (C) 2026 AHMAD ALI PARR
+% Licensed under GNU AGPL v3.0 — see LICENSE
+%
+% 00-facts.dl — Raw observation facts and Fibonacci constants
+% Pure Datalog facts only (no arithmetic predicates).
+% Load this module first.
+
+% Observed spectral peaks: peak(FreqHz, Amplitude)
+peak(46.98, 0.95).
+peak(50.98, 0.42).
+peak(39.98, 0.38).
+peak(75.98, 0.01).
+peak(42.98, 0.31).
+peak(53.98, 0.28).
+peak(57.98, 0.22).
+peak(64.98, 0.18).
+
+% Multi-channel observations: peak_ch(Channel, FreqHz, Amplitude)
+peak_ch(ch1, 46.98, 0.95).
+peak_ch(ch1, 50.98, 0.42).
+peak_ch(ch1, 39.98, 0.38).
+peak_ch(ch1, 42.98, 0.31).
+peak_ch(ch1, 53.98, 0.28).
+peak_ch(ch1, 57.98, 0.22).
+peak_ch(ch1, 64.98, 0.18).
+peak_ch(ch1, 75.98, 0.01).
+
+peak_ch(ch2, 46.95, 0.91).
+peak_ch(ch2, 50.95, 0.39).
+peak_ch(ch2, 39.95, 0.35).
+peak_ch(ch2, 53.95, 0.25).
+peak_ch(ch2, 75.95, 0.02).
+
+peak_ch(ch3, 47.01, 0.88).
+peak_ch(ch3, 51.01, 0.40).
+peak_ch(ch3, 40.01, 0.33).
+peak_ch(ch3, 43.01, 0.27).
+peak_ch(ch3, 58.01, 0.19).
+
+% Fibonacci sideband offsets (Hz)
+fib(4).
+fib(7).
+fib(11).
+fib(18).
+fib(29).
+fib(47).
+
+% Atomic keys (H, C, N, O)
+atomic_key(1).
+atomic_key(6).
+atomic_key(7).
+atomic_key(8).
+
+% Carrier window bounds
+carrier_lo(46.5).
+carrier_hi(47.5).
+carrier_lo_strict(46.8).
+carrier_hi_strict(47.2).
+
+% Amplitude thresholds
+thr_strong(0.8).
+thr_weak(0.3).
+thr_sideband(0.2).
+thr_noise(0.05).
+
+% Source-preserved aliases
+observed_peak(F, A) :- peak(F, A).
+fib_freq(F) :- fib(F).

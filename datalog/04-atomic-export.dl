@@ -1,0 +1,28 @@
+% Copyright (C) 2026 AHMAD ALI PARR
+% Licensed under GNU AGPL v3.0 — see LICENSE
+%
+% 04-atomic-export.dl — Atomic-key correlation & host export views
+% Depends on: 00-facts, 03-phi-system
+
+atomic_weight(1, 1.0).
+atomic_weight(6, 12.0).
+atomic_weight(7, 14.0).
+atomic_weight(8, 16.0).
+
+atomic_keys_active(Fc) :- phi_harmonic_system(Fc, _).
+
+export_candidate(Fc, Amp) :-
+    candidate_carrier(Fc),
+    peak(Fc, Amp).
+
+export_sideband(Fc, Fj, Fobs, Amp) :-
+    sideband_any(Fc, Fj, Fobs, Amp).
+
+export_phi(Fc, Count) :-
+    phi_harmonic_system(Fc, Count).
+
+export_confidence(Fc, high) :- confidence_high(Fc).
+export_confidence(Fc, medium) :- confidence_medium(Fc).
+export_confidence(Fc, low) :- confidence_low(Fc).
+
+export_atomic_key(K) :- atomic_key(K).

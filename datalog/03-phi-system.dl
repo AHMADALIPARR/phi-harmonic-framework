@@ -1,0 +1,42 @@
+% Copyright (C) 2026 AHMAD ALI PARR
+% Licensed under GNU AGPL v3.0 — see LICENSE
+%
+% 03-phi-system.dl — φ-harmonic system classification & confidence tiers
+% Depends on: 00-facts, 01-carrier, 02-sidebands
+
+phi_harmonic_system(Fc, ValidCount) :-
+    candidate_carrier(Fc),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 3.
+
+phi_harmonic_system_ch(Ch, Fc, ValidCount) :-
+    candidate_carrier_ch(Ch, Fc, _),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 3.
+
+phi_harmonic_strong(Fc, ValidCount) :-
+    candidate_carrier(Fc),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 5.
+
+phi_harmonic_soft(Fc, ValidCount) :-
+    candidate_carrier_soft(Fc, _),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 2.
+
+confidence_high(Fc) :- phi_harmonic_strong(Fc, _).
+confidence_medium(Fc) :-
+    phi_harmonic_system(Fc, _),
+    not confidence_high(Fc).
+confidence_low(Fc) :-
+    phi_harmonic_soft(Fc, _),
+    not phi_harmonic_system(Fc, _).
+
+quality_ok(Fc) :- phi_harmonic_system(Fc, _).
+quality_warn(Fc) :-
+    phi_harmonic_soft(Fc, _),
+    not quality_ok(Fc).
+quality_fail(Fc) :-
+    candidate_carrier_soft(Fc, _),
+    not quality_ok(Fc),
+    not quality_warn(Fc).

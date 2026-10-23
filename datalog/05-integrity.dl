@@ -1,0 +1,37 @@
+% Copyright (C) 2026 AHMAD ALI PARR
+% Licensed under GNU AGPL v3.0 — see LICENSE
+%
+% 05-integrity.dl — Multi-channel consensus and integrity checks
+% Depends on: 00-facts, 01-carrier, 03-phi-system
+
+phi_channel(Ch) :- phi_harmonic_system_ch(Ch, _, _).
+
+consensus_carrier(Fc) :-
+    candidate_carrier_ch(Ch1, Fc, _),
+    candidate_carrier_ch(Ch2, Fc, _),
+    Ch1 != Ch2.
+
+invalid_negative_amp :- peak_any(_, Amp), Amp < 0.
+
+fib_set_member(4).
+fib_set_member(7).
+fib_set_member(11).
+fib_set_member(18).
+fib_set_member(29).
+fib_set_member(47).
+
+fib_ok :- fib(4), fib(7), fib(11), fib(18), fib(29), fib(47).
+
+carrier_window_ok :-
+    carrier_lo(Lo),
+    carrier_hi(Hi),
+    Hi > Lo.
+
+integrity_ok :-
+    not invalid_negative_amp,
+    fib_ok,
+    carrier_window_ok.
+
+strong_peak(F, A) :- peak_any(F, A), A > 0.5.
+weak_peak(F, A) :- peak_any(F, A), A <= 0.5, A > 0.05.
+noise_peak(F, A) :- peak_any(F, A), A <= 0.05.
