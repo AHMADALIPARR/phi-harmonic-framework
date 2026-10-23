@@ -1,6 +1,6 @@
 # φ-Harmonic Resonance Specification & Inverse Engineering Framework
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Status: Scaffold](https://img.shields.io/badge/status-specification%20scaffold-blue)](https://github.com/AHMADALIPARR/phi-harmonic-framework)
 [![BQN](https://img.shields.io/badge/BQN-inverse%20routines-orange)](https://mlochbaum.github.io/BQN/)
 [![Agda](https://img.shields.io/badge/Agda-manifold%20collapse-green)](https://agda.readthedocs.io/)
@@ -20,6 +20,7 @@ No empirical result, proof execution, or model validation is asserted.
 ```
 phi-harmonic-framework/
 ├── README.md
+├── LICENSE
 ├── agda/
 │   └── ManifoldCollapse.agda          # Manifold collapse type theory
 ├── alloy/
@@ -70,4 +71,10 @@ This repository intentionally preserves the original source material without sub
 
 ## License
 
-MIT — see repository license if added later.
+This project is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).
+
+You can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+See the [LICENSE](LICENSE) file for the full text.
+
+**Important AGPL notice:** If you run a modified version of this software on a network server and allow others to interact with it, you must also make the corresponding source code available to those users (see section 13 of the AGPL).
