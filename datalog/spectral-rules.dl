@@ -13,29 +13,316 @@
 % You should have received a copy of the GNU Affero General Public License
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-% Datalog Spectral Grep Rules — source-preserved
+% ============================================================================
+% spectral-rules.dl
+% Production Datalog Spectral Grep Rules
+%
+% Source-preserved core: observed_peak/2, fib_freq/1, candidate_carrier/1,
+% sideband_triplet/3, phi_harmonic_system/2.
+%
+% Extended with multi-channel peaks, amplitude thresholds, sideband
+% completeness scoring, carrier confidence, atomic-key correlation
+% placeholders, and diagnostic predicates for production pipelines.
+%
+% Status: Specification scaffold with production structure.
+% Execution not asserted; requires a compatible Datalog/logic engine.
+% ============================================================================
+
+% ----------------------------------------------------------------------------
+% §1  Source-preserved facts and rules
+% ----------------------------------------------------------------------------
+
 observed_peak(46.98, 0.95).
 observed_peak(50.98, 0.42).
 observed_peak(39.98, 0.38).
 observed_peak(75.98, 0.01).
+
 fib_freq(4).
 fib_freq(7).
 fib_freq(11).
 fib_freq(18).
 fib_freq(29).
 fib_freq(47).
+
 candidate_carrier(Fc) :-
     observed_peak(Fc, Amp),
     Fc >= 46.8, Fc <= 47.2,
     Amp > 0.8.
+
 sideband_triplet(Fc, Fj, ObservedFreq) :-
     candidate_carrier(Fc),
     fib_freq(Fj),
     (ObservedFreq is Fc + Fj ; ObservedFreq is Fc - Fj),
     observed_peak(ObservedFreq, SideAmp),
     SideAmp > 0.2.
+
 phi_harmonic_system(Fc, ValidCount) :-
     candidate_carrier(Fc),
     findall(Fj, sideband_triplet(Fc, Fj, _), Sidebands),
     length(Sidebands, ValidCount),
     ValidCount >= 3.
+
+% ----------------------------------------------------------------------------
+% §2  Extended observed peaks (multi-channel / multi-scan)
+% ----------------------------------------------------------------------------
+
+observed_peak_ch(ch1, 46.98, 0.95).
+observed_peak_ch(ch1, 50.98, 0.42).
+observed_peak_ch(ch1, 39.98, 0.38).
+observed_peak_ch(ch1, 42.98, 0.31).
+observed_peak_ch(ch1, 53.98, 0.28).
+observed_peak_ch(ch1, 57.98, 0.22).
+observed_peak_ch(ch1, 64.98, 0.18).
+observed_peak_ch(ch1, 75.98, 0.01).
+
+observed_peak_ch(ch2, 46.95, 0.91).
+observed_peak_ch(ch2, 50.95, 0.39).
+observed_peak_ch(ch2, 39.95, 0.35).
+observed_peak_ch(ch2, 53.95, 0.25).
+observed_peak_ch(ch2, 75.95, 0.02).
+
+observed_peak_ch(ch3, 47.01, 0.88).
+observed_peak_ch(ch3, 51.01, 0.40).
+observed_peak_ch(ch3, 40.01, 0.33).
+observed_peak_ch(ch3, 43.01, 0.27).
+observed_peak_ch(ch3, 58.01, 0.19).
+
+observed_peak_any(Freq, Amp) :-
+    observed_peak(Freq, Amp).
+observed_peak_any(Freq, Amp) :-
+    observed_peak_ch(_, Freq, Amp).
+
+% ----------------------------------------------------------------------------
+% §3  Carrier detection (production)
+% ----------------------------------------------------------------------------
+
+carrier_window_low(46.5).
+carrier_window_high(47.5).
+strong_amp_threshold(0.8).
+weak_amp_threshold(0.3).
+sideband_amp_threshold(0.2).
+
+candidate_carrier_ch(Ch, Fc, Amp) :-
+    observed_peak_ch(Ch, Fc, Amp),
+    carrier_window_low(Lo),
+    carrier_window_high(Hi),
+    Fc >= Lo, Fc <= Hi,
+    strong_amp_threshold(Thr),
+    Amp > Thr.
+
+candidate_carrier_soft(Fc, Amp) :-
+    observed_peak_any(Fc, Amp),
+    carrier_window_low(Lo),
+    carrier_window_high(Hi),
+    Fc >= Lo, Fc <= Hi,
+    weak_amp_threshold(Thr),
+    Amp > Thr.
+
+best_carrier_ch(Ch, Fc, Amp) :-
+    candidate_carrier_ch(Ch, Fc, Amp),
+    \+ (candidate_carrier_ch(Ch, Fc2, Amp2), Amp2 > Amp).
+
+% ----------------------------------------------------------------------------
+% §4  Sideband analysis (production)
+% ----------------------------------------------------------------------------
+
+sideband_upper(Fc, Fj, Fobs, Amp) :-
+    fib_freq(Fj),
+    Fobs is Fc + Fj,
+    observed_peak_any(Fobs, Amp),
+    sideband_amp_threshold(Thr),
+    Amp > Thr.
+
+sideband_lower(Fc, Fj, Fobs, Amp) :-
+    fib_freq(Fj),
+    Fobs is Fc - Fj,
+    observed_peak_any(Fobs, Amp),
+    sideband_amp_threshold(Thr),
+    Amp > Thr.
+
+sideband_any(Fc, Fj, Fobs, Amp) :-
+    sideband_upper(Fc, Fj, Fobs, Amp).
+sideband_any(Fc, Fj, Fobs, Amp) :-
+    sideband_lower(Fc, Fj, Fobs, Amp).
+
+sideband_count(Fc, Count) :-
+    findall(Fj, sideband_any(Fc, Fj, _, _), Fs),
+    sort(Fs, Unique),
+    length(Unique, Count).
+
+sideband_completeness(Fc, Score) :-
+    sideband_count(Fc, Count),
+    Score is Count / 6.
+
+has_min_sidebands(Fc) :-
+    sideband_count(Fc, Count),
+    Count >= 3.
+
+has_strong_sidebands(Fc) :-
+    sideband_count(Fc, Count),
+    Count >= 5.
+
+% ----------------------------------------------------------------------------
+% §5  φ-Harmonic system classification
+% ----------------------------------------------------------------------------
+
+phi_harmonic_system_ch(Ch, Fc, ValidCount) :-
+    candidate_carrier_ch(Ch, Fc, _),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 3.
+
+phi_harmonic_strong(Fc, ValidCount) :-
+    candidate_carrier(Fc),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 5.
+
+phi_harmonic_soft(Fc, ValidCount) :-
+    candidate_carrier_soft(Fc, _),
+    sideband_count(Fc, ValidCount),
+    ValidCount >= 2.
+
+confidence_high(Fc) :-
+    phi_harmonic_strong(Fc, _).
+confidence_medium(Fc) :-
+    phi_harmonic_system(Fc, _),
+    \+ confidence_high(Fc).
+confidence_low(Fc) :-
+    phi_harmonic_soft(Fc, _),
+    \+ phi_harmonic_system(Fc, _).
+
+% ----------------------------------------------------------------------------
+% §6  Atomic-key correlation placeholders
+% ----------------------------------------------------------------------------
+
+atomic_key(1).
+atomic_key(6).
+atomic_key(7).
+atomic_key(8).
+
+atomic_weight(1, 1.0).
+atomic_weight(6, 12.0).
+atomic_weight(7, 14.0).
+atomic_weight(8, 16.0).
+
+atomic_keys_active(Fc) :-
+    phi_harmonic_system(Fc, _).
+
+atomic_key_set(Keys) :-
+    findall(K, atomic_key(K), Keys).
+
+% ----------------------------------------------------------------------------
+% §7  Amplitude diagnostics
+% ----------------------------------------------------------------------------
+
+peak_above(Freq, Amp, Thr) :-
+    observed_peak_any(Freq, Amp),
+    Amp > Thr.
+
+strong_peaks(Freq, Amp) :-
+    peak_above(Freq, Amp, 0.5).
+
+weak_peaks(Freq, Amp) :-
+    observed_peak_any(Freq, Amp),
+    Amp =< 0.5,
+    Amp > 0.05.
+
+noise_floor_peaks(Freq, Amp) :-
+    observed_peak_any(Freq, Amp),
+    Amp =< 0.05.
+
+peak_count_in_window(Lo, Hi, Count) :-
+    findall(F, (observed_peak_any(F, _), F >= Lo, F =< Hi), Fs),
+    length(Fs, Count).
+
+% ----------------------------------------------------------------------------
+% §8  Multi-channel consensus
+% ----------------------------------------------------------------------------
+
+consensus_carrier(Fc) :-
+    candidate_carrier_ch(Ch1, Fc, _),
+    candidate_carrier_ch(Ch2, Fc2, _),
+    Ch1 \= Ch2,
+    abs(Fc - Fc2) < 0.1.
+
+phi_channels(Ch) :-
+    phi_harmonic_system_ch(Ch, _, _).
+
+all_channels_phi :-
+    phi_channels(ch1),
+    phi_channels(ch2),
+    phi_channels(ch3).
+
+% ----------------------------------------------------------------------------
+% §9  Residual / quality predicates (scaffold)
+% ----------------------------------------------------------------------------
+
+quality_ok(Fc) :-
+    phi_harmonic_system(Fc, Count),
+    Count >= 3.
+quality_warn(Fc) :-
+    phi_harmonic_soft(Fc, Count),
+    Count >= 2,
+    Count < 3.
+quality_fail(Fc) :-
+    candidate_carrier_soft(Fc, _),
+    \+ quality_ok(Fc),
+    \+ quality_warn(Fc).
+
+% ----------------------------------------------------------------------------
+% §10  Integration views (for Agda / Alloy / BQN hosts)
+% ----------------------------------------------------------------------------
+
+export_candidate_carriers(Fc, Amp) :-
+    candidate_carrier(Fc),
+    observed_peak(Fc, Amp).
+
+export_sideband_map(Fc, Fj, Fobs, Amp) :-
+    sideband_any(Fc, Fj, Fobs, Amp).
+
+export_phi_systems(Fc, Count, Confidence) :-
+    phi_harmonic_system(Fc, Count),
+    ( confidence_high(Fc) -> Confidence = high
+    ; confidence_medium(Fc) -> Confidence = medium
+    ; Confidence = low
+    ).
+
+export_atomic_keys(Keys) :-
+    atomic_key_set(Keys).
+
+% ----------------------------------------------------------------------------
+% §11  Sanity / integrity rules
+% ----------------------------------------------------------------------------
+
+invalid_negative_amp :-
+    observed_peak_any(_, Amp),
+    Amp < 0.
+
+fib_set_ok :-
+    fib_freq(4), fib_freq(7), fib_freq(11),
+    fib_freq(18), fib_freq(29), fib_freq(47),
+    findall(F, fib_freq(F), Fs),
+    length(Fs, 6).
+
+carrier_window_ok :-
+    carrier_window_low(Lo),
+    carrier_window_high(Hi),
+    Hi > Lo.
+
+integrity_ok :-
+    \+ invalid_negative_amp,
+    fib_set_ok,
+    carrier_window_ok.
+
+% ----------------------------------------------------------------------------
+% §12  Example queries (documentation only)
+% ----------------------------------------------------------------------------
+% ?- candidate_carrier(Fc).
+% ?- sideband_triplet(Fc, Fj, Fobs).
+% ?- phi_harmonic_system(Fc, Count).
+% ?- sideband_completeness(Fc, Score).
+% ?- confidence_high(Fc).
+% ?- consensus_carrier(Fc).
+% ?- export_phi_systems(Fc, Count, Conf).
+% ?- integrity_ok.
+%
+% End of spectral-rules.dl
