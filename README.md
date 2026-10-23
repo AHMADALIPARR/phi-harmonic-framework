@@ -46,6 +46,7 @@ This repository is built around **BQN** — the array language that carries the 
 
 | Module | Role | Guide |
 |--------|------|-------|
+| **[`bqn/array-core.bqn`](bqn/array-core.bqn)** | Shared foundation: rank, φ-geometry, spectral banks, least-squares | [Read the core →](bqn/array-core.bqn) |
 | **[`bqn/fibonacci-parameters.bqn`](bqn/fibonacci-parameters.bqn)** | Carrier demodulation & Fibonacci amplitude/phase least-squares fit | [Read the fit pipeline →](bqn/fibonacci-parameters.bqn) |
 | **[`bqn/inverse-solver.bqn`](bqn/inverse-solver.bqn)** | Field inverse: spectrum isolation, residual maps, spatial coherence | [Read the inverse solver →](bqn/inverse-solver.bqn) |
 | **[`bqn/cellular-automata.bqn`](bqn/cellular-automata.bqn)** | Recursive invariant extraction from CA trajectories + atomic-key masking | [Read the CA engine →](bqn/cellular-automata.bqn) |
@@ -97,6 +98,7 @@ Execution rules (what must not be changed):
 - [Execution Contract](specification/execution-contract.md) — non-negotiable preservation rules
 
 ### BQN inverse stack (★ primary)
+- [Array Core](bqn/array-core.bqn) — shared foundation
 - [Fibonacci Parameters](bqn/fibonacci-parameters.bqn) — demodulation & LS fit
 - [Inverse Solver](bqn/inverse-solver.bqn) — field → residual / carrier pipeline
 - [Cellular Automata](bqn/cellular-automata.bqn) — trajectory invariants & atomic keys
