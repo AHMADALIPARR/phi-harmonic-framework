@@ -15,15 +15,10 @@
 
 # ============================================================================
 # cellular-automata.bqn
-# Production BQN Module: Recursive Invariant Extraction from
-# Cellular Automata Payload
-#
-# Source-preserved core: PHI, ATOMIC_KEYS, F_FIB, EvolveCAState,
-# BuildCAResponseMatrix, ExtractRecursiveInvariant.
-#
-# Extended with multi-step evolution, invariant time-series,
-# atomic-key masking, residual diagnostics, and batch pipelines.
-# Status: Specification scaffold with production structure.
+# Production BQN: Recursive Invariant Extraction from CA Payload
+# Source-preserved: PHI, ATOMIC_KEYS, F_FIB, EvolveCAState, BuildCAResponseMatrix,
+#   ExtractRecursiveInvariant
+# Status: Specification scaffold; execution not asserted.
 # ============================================================================
 
 PHI ← 1.618033988749895
@@ -70,6 +65,14 @@ Trajectory ← {
 DensityCA ← { (+/ 𝕩) ÷ 1⌈≠𝕩 }
 AliveCount ← { +/ 𝕩 }
 
+# Activity map over trajectory
+ActivityMap ← { traj ← 𝕩 ⋄ > traj }
+HammingDistance ← { +/ 𝕨 ≠ 𝕩 }
+HammingSeries ← {
+  traj ← 𝕩
+  { 𝕨 HammingDistance 𝕩 } ´ ˝ 2 ↕ traj
+}
+
 BuildCAResponseMatrixProd ← {
   traj ← 𝕩
   {
@@ -108,6 +111,22 @@ MaskAtomicKeys ← {
 }
 EvolveMasked ← { state ← 𝕩 ⋄ EvolveCAState MaskAtomicKeys state }
 
+# Autocorr period proxy
+AutocorrPeriod ← {
+  dens ← DensityCA ¨ 𝕩
+  n ← ≠dens ⋄ m ← ¨mean dens
+  c0 ← +/(dens-m)⋆2
+  lags ← 1+↕⌊n÷2
+  ac ← {
+    lag ← 𝕩
+    a ← lag ↓ dens ⋄ b ← (n-lag) ↑ dens
+    (+/(a-m)×(b-m)) ÷ 1⌈c0
+  } ¨ lags
+  # first lag where ac drops then rises near peak
+  peakLag ← ⊑ / ac = ⌈´ac
+  1 + peakLag
+}
+
 ProcessCABatch ← {
   inits ← 𝕩 ⋄ nSteps ← 𝕨
   { traj ← nSteps Trajectory 𝕩 ⋄ InvariantSeries traj } ¨ inits
@@ -120,6 +139,19 @@ DensityPeriodProxy ← {
   dens ← DensityCA ¨ 𝕩 ⋄ start ← ⊑ dens
   idx ← 1 ↓ / (| dens - start) < 0.05
   { 0 = ≠idx ? ≠dens ; ⊑ idx }
+}
+
+# CA report bundle
+CAReport ← {
+  init ← 𝕨 ⋄ nSteps ← 𝕩
+  traj ← nSteps Trajectory init
+  inv‿status ← InvariantSeries traj
+  stable ← TrajectoryStable traj
+  period ← DensityPeriodProxy traj
+  acPeriod ← AutocorrPeriod traj
+  ham ← HammingSeries traj
+  meanHam ← (+/ham) ÷ 1⌈≠ham
+  ⟨inv, status, stable, period, acPeriod, meanHam⟩
 }
 
 DefaultCAConfig ← {
@@ -139,6 +171,7 @@ RunCAWithKeys ← {
   init ← 𝕨 ⋄ nSteps ← 𝕩 ⋄ masked ← MaskAtomicKeys init
   masked RunCAInvariant nSteps
 }
+RunCAReport ← { init ← 𝕨 ⋄ nSteps ← 𝕩 ⋄ init CAReport nSteps }
 
 FormatCAResult ← {
   inv‿status‿stable‿period ← 𝕩
@@ -150,6 +183,6 @@ SelfTestEvolve ← { s ← RandomState 32 ⋄ s2 ← EvolveCAState s ⋄ ≠s2 }
 SelfTestTrajectory ← { s ← RandomState 16 ⋄ traj ← 5 Trajectory s ⋄ ≠traj }
 SelfTestInvariant ← { s ← RandomState 24 ⋄ result ← s RunCAInvariant 8 ⋄ ⊑ result }
 
-# Primary API: RunCAInvariant, RunCAWithKeys, ExtractInvariantProd, Trajectory
+# Primary API: RunCAInvariant, RunCAWithKeys, RunCAReport, ExtractInvariantProd, Trajectory
 # Source-preserved: EvolveCAState, BuildCAResponseMatrix, ExtractRecursiveInvariant
-# End of cellular-automata.bqn
+# End of cellular-automata.bqn (expanded)

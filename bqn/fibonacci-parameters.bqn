@@ -15,18 +15,9 @@
 
 # ============================================================================
 # fibonacci-parameters.bqn
-# Production BQN Module: Carrier Demodulation & Fibonacci Amplitude/Phase
-# Least-Squares Fit
-#
-# Source-preserved core: PHI, F_FIB, ZeroCrossings, GetNodeSpacingRatios,
-# BuildDesignMatrix, SolveLeastSquares, ExtractFibonacciParams, CheckResiduals.
-#
-# Extended with input validation, multi-channel batch processing, residual
-# diagnostics, phase unwrapping helpers, configuration record, and logging
-# hooks for production pipelines.
-#
-# Status: Specification scaffold with production structure.
-# Execution not asserted; requires an explicit BQN runtime.
+# Production BQN: Carrier Demodulation & Fibonacci Amplitude/Phase LS Fit
+# Depends on array-core primitives (inlined for standalone use).
+# Status: Specification scaffold; execution not asserted.
 # ============================================================================
 
 PHI ← 1.618033988749895
@@ -40,13 +31,13 @@ N_FIB ← ≠F_FIB
 N_COLS ← 2 × N_FIB
 π ← 3.141592653589793
 
+# --- Source-preserved core ---
 ZeroCrossings ← { (1 ⊸ ⌽ ≠ ⊢) × 𝕩 }
 GetNodeSpacingRatios ← { zc ← ZeroCrossings 𝕩 ⋄ (1 ⌽ ⊢) ÷ ⊢ ⊸ (-) ⟜ zc }
 BuildDesignMatrix ← {
   t ← 𝕩
   c ← { 2 × π × 𝕩 × t } ¨ F_FIB
-  cos_cols ← cos ¨ c
-  sin_cols ← sin ¨ c
+  cos_cols ← cos ¨ c ⋄ sin_cols ← sin ¨ c
   ∾˘ cos_cols ∾ sin_cols
 }
 SolveLeastSquares ← {
@@ -67,6 +58,7 @@ CheckResiduals ← {
   (+/ res⋆2) ÷ (+/ actual⋆2)
 }
 
+# --- Validation ---
 IsValidSignal ← { (1 == =𝕩) ∧ (0 < ≠𝕩) }
 IsValidTimeBase ← { (1 == =𝕩) ∧ (≠𝕩 = ≠𝕨) }
 ValidateInputs ← {
@@ -74,6 +66,7 @@ ValidateInputs ← {
   ∧´ ⟨ IsValidSignal sig, IsValidTimeBase ⟨sig, t⟩, N_FIB = ≠F_FIB ⟩
 }
 
+# --- Production design matrix ---
 BuildDesignMatrixProd ← {
   t ← 𝕩 ⋄ n ← ≠t
   cols ← ⥊ {f←𝕩 ⋄ (cos 2×π×f×t) ∾ (sin 2×π×f×t)} ¨ F_FIB
@@ -86,6 +79,7 @@ BuildDesignMatrixCols ← {
   cosPart ∾˘ sinPart
 }
 
+# --- Robust LS & diagnostics ---
 SafeSolveLS ← {
   A ← 𝕨 ⋄ b ← 𝕩
   AtA ← (⍉A) +.× A
@@ -118,15 +112,46 @@ ExtractParamsProd ← {
   ⟨amps, phases, relRes, cond, x⟩
 }
 
+# --- Zero-crossing extended ---
 ZeroCrossingIndices ← { zc ← ZeroCrossings 𝕩 ⋄ / zc }
 NodeSpacings ← { idx ← ZeroCrossingIndices 𝕩 ⋄ 1 ↓ idx - » idx }
 MeanNodeSpacing ← { sp ← NodeSpacings 𝕩 ⋄ (+/sp) ÷ 1⌈≠sp }
 SpacingRatiosVsPhi ← { sp ← NodeSpacings 𝕩 ⋄ sp ÷ PHI }
 
+# --- Sliding / windowed fits ---
+SlidingFit ← {
+  sig ← 𝕨 ⋄ win ← 𝕩
+  n ← ≠sig ⋄ starts ← ↕(1⌈n-win+1)
+  {
+    s ← 𝕩 ⋄ chunk ← win ↑ s ↓ sig
+    t ← ↕ win
+    A ← BuildDesignMatrixProd t
+    ExtractParamsProd A‿chunk
+  } ¨ starts
+}
+
+# --- Energy capture ---
+EnergyCapture ← {
+  amps ← 𝕩
+  total ← +/ amps⋆2
+  frac ← (amps⋆2) ÷ 1⌈total
+  ⟨total, frac⟩
+}
+
+# --- Batch / multi-channel ---
 ProcessChannel ← { sig ← 𝕨 ⋄ t ← 𝕩 ⋄ A ← BuildDesignMatrixProd t ⋄ ExtractParamsProd A‿sig }
 ProcessBatch ← { signals ← 𝕨 ⋄ t ← 𝕩 ⋄ {𝕩 ProcessChannel t} ¨ signals }
 AggregateAmplitudes ← { results ← 𝕩 ⋄ > {⊑ 𝕩} ¨ results }
 
+# --- Diagnose ---
+DiagnoseFit ← {
+  amps‿phases‿relRes‿cond‿x ← 𝕩
+  status ← ClassifyResidual relRes
+  energy‿frac ← EnergyCapture amps
+  ⟨status, relRes, cond, energy, frac, amps, phases⟩
+}
+
+# --- Config ---
 DefaultConfig ← {
   phi ⇐ PHI ⋄ fib ⇐ F_FIB ⋄ carrier ⇐ CARRIER_HZ
   residualWarn ⇐ RESIDUAL_WARN ⋄ residualFail ⇐ RESIDUAL_FAIL ⋄ maxDensity ⇐ MAX_DENSITY
@@ -150,12 +175,19 @@ RunFibonacciFit ← {
   }
 }
 RunWithConfig ← { cfg ← 𝕨 ⋄ sig‿t ← 𝕩 ⋄ sig RunFibonacciFit t }
+RunAndDiagnose ← {
+  sig ← 𝕨 ⋄ t ← 𝕩
+  result ← sig RunFibonacciFit t
+  { "INVALID_INPUT" ≡ ⊑result ? result ; DiagnoseFit result }
+}
 
+# --- Self-test scaffolding ---
 SyntheticTone ← { f ← 𝕨 ⋄ t ← 𝕩 ⋄ sin 2 × π × f × t }
 SyntheticMix ← { t ← 𝕩 ⋄ +˝ > {SyntheticTone 𝕩‿t} ¨ F_FIB }
 SelfTestDesignMatrix ← { t ← ↕ 128 ⋄ A ← BuildDesignMatrixProd t ⋄ ⟨≠A, 1⊑≢A, N_COLS⟩ }
 SelfTestResidualZero ← { t ← ↕ 64 ⋄ sig ← SyntheticMix t ⋄ A ← BuildDesignMatrixProd t ⋄ A RelativeResidual sig }
 
-# Primary API: RunFibonacciFit, ExtractParamsProd, RelativeResidual, BuildDesignMatrixProd
-# Source-preserved names retained for compatibility.
-# End of fibonacci-parameters.bqn
+# Primary API: RunFibonacciFit, RunAndDiagnose, ExtractParamsProd, SlidingFit, ProcessBatch
+# Source-preserved: ZeroCrossings, GetNodeSpacingRatios, BuildDesignMatrix, SolveLeastSquares,
+#   ExtractFibonacciParams, CheckResiduals
+# End of fibonacci-parameters.bqn (expanded)

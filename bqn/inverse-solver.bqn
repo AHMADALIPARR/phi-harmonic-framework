@@ -16,14 +16,9 @@
 # ============================================================================
 # inverse-solver.bqn
 # Production BQN Inverse Solver Module
-#
-# Source-preserved core: ZeroCrossings, GetNodeSpacingRatios,
-# AnalyzeSpectrum, CheckResiduals.
-# Assumes F is a 2D matrix [Spatial_Points × Time_Steps].
-#
-# Extended with spectrum peak picking, carrier isolation, residual
-# maps, spatial coherence checks, and pipeline orchestration.
-# Status: Specification scaffold with production structure.
+# Source-preserved: ZeroCrossings, GetNodeSpacingRatios, AnalyzeSpectrum, CheckResiduals
+# Assumes F is [Spatial_Points × Time_Steps].
+# Status: Specification scaffold; execution not asserted.
 # ============================================================================
 
 PHI ← 1.618033988749895
@@ -75,12 +70,23 @@ IsolateCarrier ← {
   { cbin ⊑ 𝕩 } ¨ specs
 }
 PeakBins ← { mag ← 𝕩 ⋄ thr ← PEAK_PROMINENCE × ⌈´ mag ⋄ / mag ≥ thr }
+PeakFreqs ← {
+  mag ← 𝕩 ⋄ n ← ≠mag ⋄ bins ← PeakBins mag
+  bins × (1 ÷ n)   # normalized freq proxy
+}
 SidebandPresence ← {
   mag ← 𝕩 ⋄ n ← ≠mag ⋄ peaks ← PeakBins mag ⋄ cbin ← CarrierBin n
   expected ← ⥊ {cbin + 𝕩} ¨ (-F_FIB) ∾ F_FIB
   expected ← expected /˜ (expected ≥ 0) ∧ (expected < n)
   ∧´ {∨´ (| peaks - 𝕩) ≤ 1} ¨ expected
 }
+
+# Whitening (scaffold)
+WhitenRow ← {
+  r ← 𝕩 ⋄ m ← ¨mean r ⋄ s ← 1⌈√(+/(r-m)⋆2÷≠r)
+  (r - m) ÷ s
+}
+WhitenField ← { F ← 𝕩 ⋄ WhitenRow ˘ F }
 
 FieldRelativeResidual ← {
   pred ← 𝕨 ⋄ actual ← 𝕩 ⋄ diff ← actual - pred
@@ -100,6 +106,12 @@ SpatialCoherence ← {
 }
 MeanCoherence ← { (+/ SpatialCoherence 𝕩) ÷ SpatialPoints 𝕩 }
 
+# Spatial windowing
+SpatialWindow ← {
+  F ← 𝕨 ⋄ i‿j ← 𝕩
+  i ↓ (j-i) ↑ F
+}
+
 InverseStep ← {
   F ← 𝕩
   {
@@ -115,6 +127,16 @@ RunInverseSolver ← {
   status‿relRes‿carrier ← InverseStep F
   coh ← MeanCoherence F
   ⟨status, relRes, carrier, coh⟩
+}
+
+# Field annotation report
+AnnotateField ← {
+  F ← 𝕩
+  status‿relRes‿carrier‿coh ← RunInverseSolver F
+  dens ← DensityProxy F
+  wl ← WavelengthProxy F
+  stable ← StableField F
+  ⟨status, relRes, coh, dens, wl, stable⟩
 }
 
 DensityProxy ← { energies ← +˝ 𝕩⋆2 ⋄ +/ energies > SPECTRAL_FLOOR }
@@ -148,6 +170,6 @@ SyntheticField ← {
 SelfTestValidate ← { F ← 8 SyntheticField 64 ⋄ ValidateField F }
 SelfTestInverse ← { F ← 4 SyntheticField 32 ⋄ RunInverseSolver F }
 
-# Primary API: RunInverseSolver, InverseStep, FieldRelativeResidual, IsolateCarrier
+# Primary API: RunInverseSolver, AnnotateField, FieldRelativeResidual, IsolateCarrier, WhitenField
 # Source-preserved: ZeroCrossings, GetNodeSpacingRatios, AnalyzeSpectrum, CheckResiduals
-# End of inverse-solver.bqn
+# End of inverse-solver.bqn (expanded)
