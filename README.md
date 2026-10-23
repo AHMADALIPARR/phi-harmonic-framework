@@ -106,7 +106,16 @@ Execution rules (what must not be changed):
 ### Formal companions
 - [Agda — Manifold Collapse](agda/ManifoldCollapse.agda) — survival, density, wavelength invariants
 - [Alloy — Branch Simulation](alloy/BranchSimulation.als) — reachable branches & stable invariants
-- [Datalog — Spectral Rules](datalog/spectral-rules.dl) — carrier / sideband grep & confidence tiers
+
+### Datalog spectral stack
+- [datalog/README.md](datalog/README.md) — load order & notes
+- [`00-facts.dl`](datalog/00-facts.dl) — peaks, fib offsets, atomic keys, thresholds
+- [`01-carrier.dl`](datalog/01-carrier.dl) — carrier candidates
+- [`02-sidebands.dl`](datalog/02-sidebands.dl) — sideband triplets
+- [`03-phi-system.dl`](datalog/03-phi-system.dl) — φ-system + confidence tiers
+- [`04-atomic-export.dl`](datalog/04-atomic-export.dl) — atomic keys + host exports
+- [`05-integrity.dl`](datalog/05-integrity.dl) — consensus & integrity
+- [`spectral-rules.dl`](datalog/spectral-rules.dl) — unified all-in-one module
 
 ### Discipline & payload
 - [Last-Token Replay](replay/last-token-replay.md) — exact state-transition replay
@@ -122,7 +131,7 @@ Execution rules (what must not be changed):
 
 1. Read the **[mathematical framework](specification/mathematical-framework.md)**.
 2. Evaluate the **BQN** routines in [`bqn/`](bqn/) with an explicit BQN runtime. ★
-3. Evaluate [`datalog/spectral-rules.dl`](datalog/spectral-rules.dl) in a compatible logic engine.
+3. Evaluate [`datalog/`](datalog/) (load `00`→`05` or `spectral-rules.dl`) in a compatible logic engine.
 4. Supply CA frames + atomic keys to [`bqn/cellular-automata.bqn`](bqn/cellular-automata.bqn).
 5. Check [`alloy/BranchSimulation.als`](alloy/BranchSimulation.als) and type-check [`agda/ManifoldCollapse.agda`](agda/ManifoldCollapse.agda).
 6. Follow [`replay/last-token-replay.md`](replay/last-token-replay.md) for exact last-token recursive replay.
